@@ -989,8 +989,11 @@ $("#homeDims").innerHTML=DIMS.map(d=>`<span>${d.em} ${d.n}</span>`).join("");
 /* ============ 后端对接 ============ */
 let ME=null, attemptId=null;
 const isReportPage=/^\/r\/[A-Za-z0-9_-]+$/.test(location.pathname);
+const VITE_API_BASE_URL="https://talent-test-api.y13786028334.workers.dev";
+const API_BASE=(typeof globalThis.VITE_API_BASE_URL==="string"?globalThis.VITE_API_BASE_URL:VITE_API_BASE_URL).replace(/\/$/,"");
+const apiUrl=path=>API_BASE+(path.startsWith("/")?path:"/"+path);
 async function api(path,opts={}){
-  const r=await fetch(path,{credentials:"same-origin",headers:{"Content-Type":"application/json"},...opts});
+  const r=await fetch(apiUrl(path),{credentials:"include",headers:{"Content-Type":"application/json"},...opts});
   let data=null; try{ data=await r.json(); }catch(e){}
   if(!r.ok){ const e=new Error((data&&data.error)||("请求失败 "+r.status)); e.status=r.status; throw e; }
   return data;
@@ -1083,7 +1086,7 @@ async function verifyKey(){
     if(d.report_id){
       /* 这把密钥已经出过报告（次数用尽）：直接打开那份结果页 */
       setKeyMsg("已验证 · 正在打开你的测试结果…","ok");
-      location.href="/r/"+d.report_id;
+      location.href=apiUrl("/r/"+d.report_id);
       return;
     }
     setKeyMsg(d.unlimited?"验证通过 · 万能密钥不限次数，可反复测评":"验证通过 · 正在进入答题…","ok");
@@ -1121,7 +1124,7 @@ async function loadHistory(){
     box.style.display="block";
     $("#histList").innerHTML=d.reports.map(r=>{
       const dim=DIMS.find(x=>x.k===r.top_key);
-      return `<a class="hist-item" href="/r/${r.id}"><b>${r.total}分</b><span>${dim?dim.em+" "+dim.n:"—"} · ${r.created_at}</span><i>›</i></a>`;
+      return `<a class="hist-item" href="${apiUrl("/r/"+r.id)}"><b>${r.total}分</b><span>${dim?dim.em+" "+dim.n:"—"} · ${r.created_at}</span><i>›</i></a>`;
     }).join("");
   }catch(e){}
 }
@@ -1132,10 +1135,10 @@ async function startQuiz(){
   try{
     if(!ME){ const m=await api("/api/me"); ME={remaining:m.remaining,total:m.total,report_id:m.report_id||null,unlimited:!!m.unlimited}; }
     /* 次数用尽且已有报告：无论刷新还是再点测试，都回到那份结果页（万能密码不受限） */
-    if(ME && ME.report_id && !ME.unlimited){ clearProgress(); location.href="/r/"+ME.report_id; return; }
+    if(ME && ME.report_id && !ME.unlimited){ clearProgress(); location.href=apiUrl("/r/"+ME.report_id); return; }
     if(ME && !ME.unlimited && ME.remaining<=0){ show("s-home"); setKeyMsg("次数已用完，仅可查看历史报告","err"); return; }
     const d=await api("/api/attempt",{method:"POST",body:"{}"});
-    if(d.report_id){ clearProgress(); location.href="/r/"+d.report_id; return; }
+    if(d.report_id){ clearProgress(); location.href=apiUrl("/r/"+d.report_id); return; }
     attemptId=d.attempt_id;
     /* 有本地存档就接着答（被刷新/断网打断的情况），否则从头开始 */
     const pr=readProgress();
@@ -1216,7 +1219,7 @@ async function finish(){
   try{
     const d=await api("/api/submit",{method:"POST",body:JSON.stringify({attempt_id:attemptId,answers})});
     clearProgress();
-    location.href="/r/"+d.report_id;
+    location.href=apiUrl("/r/"+d.report_id);
   }catch(e){
     show("s-quiz");
     alert(e.message);
@@ -1708,7 +1711,7 @@ function downloadCard(){
     /* 刷新页面时：这把密钥已经出过报告 → 直接回结果页，不再显示首页
        （点「返回首页」会带 ?home=1，此时不自动跳转，方便换密钥或看历史） */
     const backHome=new URLSearchParams(location.search).has("home");
-    if(m.report_id && !backHome){ clearProgress(); location.replace("/r/"+m.report_id); return; }
+    if(m.report_id && !backHome){ clearProgress(); location.replace(apiUrl("/r/"+m.report_id)); return; }
     ME={remaining:m.remaining,total:m.total,report_id:m.report_id||null,unlimited:!!m.unlimited};
     KEY_OPEN=true;
     /* 关键：验证过也不锁输入框，任何时候都能重新输入密钥 */
