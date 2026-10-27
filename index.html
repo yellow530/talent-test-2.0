@@ -1062,7 +1062,7 @@ function lockKey(msg){
   KEY_OPEN=false;
   const inp=$("#keyInput"), go=$("#keyGo");
   if(inp){ inp.disabled=false; inp.placeholder="输入密钥开始测试"; }
-  if(go){ go.textContent="→"; go.disabled=false; }
+  if(go){ go.textContent="开始测试"; go.disabled=false; }
   setKeyMsg(msg||"", msg?"err":"");
   updateStartLabel();
 }
@@ -1082,7 +1082,7 @@ async function verifyKey(){
     try{ localStorage.setItem("talent_code4",code.slice(-4)); }catch(e){}
     /* 验证通过也不锁输入框，方便随时换密钥或重新输入 */
     inp.value=""; inp.disabled=false; inp.placeholder="已验证 · 输入新密钥可切换";
-    go.textContent="→"; go.disabled=false;
+    go.textContent="开始测试"; go.disabled=false;
     paintQuota();
     if(d.report_id){
       /* 这把密钥已经出过报告（次数用尽）：直接打开那份结果页 */
@@ -1719,12 +1719,10 @@ function downloadCard(){
     KEY_OPEN=!!m.attempt_id && !m.report_id;
     const inp=$("#keyInput"), go=$("#keyGo");
     if(inp){ inp.disabled=true; }
-    if(go){ go.textContent="→"; go.disabled=false; }
+    if(go){ go.textContent="开始测试"; go.disabled=false; }
     const pr=readProgress();
     if(pr){
-      setKeyMsg("点击开始测试继续答题","ok");
-    }else{
-      setKeyMsg(m.report_id?"测试已完成，正在打开报告":"每个浏览器完成一次测试","ok");
+      setKeyMsg("", "");
     }
     enterHome();
     /* 答题途中被刷新/断网/关页面：自动接着上次进度继续答（主动回首页 ?home=1 时不自动进入） */
